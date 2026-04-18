@@ -1,0 +1,265 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Whois Lookup API",
+    "description": "HTTP API to perform WHOIS lookups for domain names, IPv4/IPv6 addresses, and Autonomous System Numbers (ASN). The API returns structured WHOIS information parsed from raw WHOIS responses.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Local server"
+    }
+  ],
+  "paths": {
+    "/api/v1/whois": {
+      "post": {
+        "summary": "Perform a WHOIS lookup",
+        "description": "Performs a WHOIS lookup using one of the following parameters: ip, domain, or asn. Only one parameter should be provided.",
+        "operationId": "whoisLookup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WhoisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "WHOIS query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoisResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed"
+          }
+        }
+      }
+    },
+    "/favicon.png": {
+      "get": {
+        "summary": "API favicon",
+        "description": "Returns the API favicon image.",
+        "responses": {
+          "200": {
+            "description": "PNG favicon",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WhoisRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "IPv4 or IPv6 address to query",
+            "examples": ["8.8.8.8"]
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain name to query",
+            "examples": ["example.com"]
+          },
+          "asn": {
+            "type": "string",
+            "description": "Autonomous System Number (with or without AS prefix)",
+            "examples": ["15169"]
+          },
+          "whoisserver": {
+            "type": "string",
+            "description": "Optional custom WHOIS server (host or host:port)",
+            "examples": ["whois.verisign-grs.com:43"]
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Timeout in seconds (0 = default)",
+            "examples": [10]
+          }
+        }
+      },
+      "WhoisResponse": {
+        "type": "object",
+        "required": ["status", "answers"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["SUCCESS", "ERROR", "NOTFOUND"]
+          },
+          "answers": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WhoisResult"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "WhoisResult": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "queryType": {
+            "type": "string",
+            "enum": ["domain", "ipv4", "ipv6", "asn"]
+          },
+          "whoisServer": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "domainName": {
+            "type": "string"
+          },
+          "domainID": {
+            "type": "string"
+          },
+          "status": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nameServers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "registrar": {
+            "type": "string"
+          },
+          "registrarURL": {
+            "type": "string"
+          },
+          "registrarIANAID": {
+            "type": "string"
+          },
+          "registrarWhoisServer": {
+            "type": "string"
+          },
+          "registrarAbuseEmail": {
+            "type": "string"
+          },
+          "registrarAbusePhone": {
+            "type": "string"
+          },
+          "created": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updated": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "expires": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "dnssec": {
+            "type": "string"
+          },
+          "registrant": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "tech": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "network": {
+            "type": "string"
+          },
+          "netName": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "asName": {
+            "type": "string"
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rawData": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "fax": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

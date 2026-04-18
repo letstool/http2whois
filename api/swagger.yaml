@@ -1,0 +1,340 @@
+openapi: 3.0.3
+
+info:
+  title: Whois Lookup API
+  description: |
+    HTTP API to perform WHOIS lookups for:
+      - Domain names
+      - IPv4 / IPv6 addresses
+      - Autonomous System Numbers (ASN)
+
+    The API returns structured WHOIS information parsed from raw WHOIS responses.
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: Local server
+
+paths:
+
+  /api/v1/whois:
+    post:
+      summary: Perform a WHOIS lookup
+      description: |
+        Performs a WHOIS lookup using one of the following parameters:
+
+        - `ip`
+        - `domain`
+        - `asn`
+
+        Only one parameter should be provided.
+
+        Optionally a custom WHOIS server and timeout can be specified.
+      operationId: whoisLookup
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhoisRequest'
+            examples:
+
+              domainLookup:
+                summary: Domain lookup
+                value:
+                  domain: example.com
+
+              ipLookup:
+                summary: IPv4 lookup
+                value:
+                  ip: 8.8.8.8
+
+              asnLookup:
+                summary: ASN lookup
+                value:
+                  asn: "15169"
+
+              customServer:
+                summary: Domain lookup with custom WHOIS server
+                value:
+                  domain: example.com
+                  whoisserver: whois.verisign-grs.com:43
+                  timeout: 10
+
+      responses:
+
+        "200":
+          description: WHOIS query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhoisResponse'
+              examples:
+
+                successDomain:
+                  summary: Successful domain lookup
+                  value:
+                    status: SUCCESS
+                    answers:
+                      query: example.com
+                      queryType: domain
+                      whoisServer: whois.verisign-grs.com
+                      domainName: EXAMPLE.COM
+                      domainID: 2336799_DOMAIN_COM-VRSN
+                      status:
+                        - clientDeleteProhibited https://icann.org/epp#clientDeleteProhibited
+                      nameServers:
+                        - elliott.ns.cloudflare.com
+                        - hera.ns.cloudflare.com
+                      registrar: RESERVED-Internet Assigned Numbers Authority
+                      registrarURL: http://res-dom.iana.org
+                      created: "1995-08-14T04:00:00Z"
+                      updated: "2026-01-16T18:26:50Z"
+                      expires: "2026-08-13T04:00:00Z"
+                      available: false
+                      rawData:
+                        - "Raw WHOIS response..."
+
+                notFound:
+                  summary: No WHOIS record found
+                  value:
+                    status: NOTFOUND
+                    answers: []
+
+                error:
+                  summary: Error response
+                  value:
+                    status: ERROR
+                    answers: invalid JSON
+
+        "405":
+          description: Method not allowed
+
+  /favicon.png:
+    get:
+      summary: API favicon
+      description: Returns the API favicon image.
+      responses:
+        "200":
+          description: PNG favicon
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+
+components:
+
+  schemas:
+
+    WhoisRequest:
+      type: object
+      description: Request payload for a WHOIS lookup
+      properties:
+
+        ip:
+          type: string
+          description: IPv4 or IPv6 address to query
+          example: 8.8.8.8
+
+        domain:
+          type: string
+          description: Domain name to query
+          example: example.com
+
+        asn:
+          type: string
+          description: Autonomous System Number (with or without AS prefix)
+          example: "15169"
+
+        whoisserver:
+          type: string
+          description: |
+            Optional custom WHOIS server.
+
+            Format:
+              - host
+              - host:port
+
+            Example:
+              whois.verisign-grs.com:43
+          example: whois.verisign-grs.com:43
+
+        timeout:
+          type: integer
+          description: Timeout for the WHOIS request in seconds (0 = default)
+          example: 10
+
+      additionalProperties: false
+
+    WhoisResponse:
+      type: object
+      description: API response wrapper
+      required:
+        - status
+        - answers
+
+      properties:
+
+        status:
+          type: string
+          description: Request status
+          enum:
+            - SUCCESS
+            - ERROR
+            - NOTFOUND
+
+        answers:
+          description: WHOIS lookup result or error message
+          oneOf:
+            - $ref: '#/components/schemas/WhoisResult'
+            - type: array
+              items:
+                type: string
+            - type: string
+
+    WhoisResult:
+      type: object
+      description: Parsed WHOIS result
+
+      properties:
+
+        query:
+          type: string
+          description: Query value
+
+        queryType:
+          type: string
+          description: Type of query performed
+          enum:
+            - domain
+            - ipv4
+            - ipv6
+            - asn
+
+        whoisServer:
+          type: string
+          description: WHOIS server used
+
+        available:
+          type: boolean
+          description: Indicates whether the domain is available
+
+        domainName:
+          type: string
+
+        domainID:
+          type: string
+
+        status:
+          type: array
+          items:
+            type: string
+
+        nameServers:
+          type: array
+          items:
+            type: string
+
+        registrar:
+          type: string
+
+        registrarURL:
+          type: string
+
+        registrarIANAID:
+          type: string
+
+        registrarWhoisServer:
+          type: string
+
+        registrarAbuseEmail:
+          type: string
+
+        registrarAbusePhone:
+          type: string
+
+        created:
+          type: string
+          format: date-time
+
+        updated:
+          type: string
+          format: date-time
+
+        expires:
+          type: string
+          format: date-time
+
+        dnssec:
+          type: string
+
+        registrant:
+          $ref: '#/components/schemas/Contact'
+
+        admin:
+          $ref: '#/components/schemas/Contact'
+
+        tech:
+          $ref: '#/components/schemas/Contact'
+
+        network:
+          type: string
+          description: IP network range
+
+        netName:
+          type: string
+
+        origin:
+          type: string
+
+        asName:
+          type: string
+
+        routes:
+          type: array
+          items:
+            type: string
+
+        rawData:
+          type: array
+          description: Raw WHOIS responses from servers
+          items:
+            type: string
+
+    Contact:
+      type: object
+      description: Contact information extracted from WHOIS
+
+      properties:
+
+        name:
+          type: string
+
+        organization:
+          type: string
+
+        email:
+          type: string
+
+        phone:
+          type: string
+
+        fax:
+          type: string
+
+        street:
+          type: string
+
+        city:
+          type: string
+
+        state:
+          type: string
+
+        postalCode:
+          type: string
+
+        country:
+          type: string
